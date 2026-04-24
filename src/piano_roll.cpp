@@ -216,7 +216,7 @@ void Visualizer::draw_channel_slices(int x, int y, int w, int h, bool outline) {
         const SliceState& slice = item.slice;
         if (slice.width <= 0.0f) continue;
 
-        float sx = keys_x + config.key_thickness * slice.index - slice.width / 2.0f;
+        float sx = keys_x + config.key_thickness * (slice.index + 0.5f) - slice.width / 2.0f;
         float sw = slice.width;
         float sy = item.y;
         float sh = slice.height;

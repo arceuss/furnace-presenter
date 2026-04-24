@@ -168,10 +168,8 @@ bool Renderer::init() {
         return false;
     }
 
-    // Furnace's headless audio export switches dispatch to render cores after init.
-    engine->quitDispatch();
-    engine->initDispatch(true);
-    engine->renderSamplesP();
+    // Temporarily keep the post-init dispatch state unchanged while isolating
+    // the render-core switch path crash.
 
     int totalChans = engine->getTotalChannelCount();
     if (totalChans <= 0) {
@@ -213,11 +211,7 @@ bool Renderer::init() {
         }
         cs.colors = furnace_color_variants(base_color);
         cs.chip = furnace_channel_type_name(chType);
-        if (!engine->curSubSong->chanName[i].empty()) {
-            cs.name = engine->curSubSong->chanName[i].c_str();
-        } else {
-            cs.name = cs.chip + " " + std::to_string(i + 1);
-        }
+        cs.name = cs.chip + " " + std::to_string(i + 1);
         if (options.hide_unused && !channel_has_ordered_note(engine.get(), i)) {
             cs.hidden = true;
         }
@@ -245,9 +239,12 @@ bool Renderer::init() {
     prev_frequencies.resize(totalChans, 0.0);
     prev_visual_notes.resize(totalChans, -1);
 
+    walked_positions.clear();
+    last_order = -1;
+    last_row = -1;
+
     // Set up playback
     engine->setOrder(0);
-    engine->setLoops(-1); // infinite until we stop
     engine->play();
 
     return true;
@@ -278,7 +275,9 @@ bool Renderer::load_module() {
     }
     fclose(f);
 
-    if (!engine->load(buf.data(), (size_t)len, options.input_path.c_str())) {
+    unsigned char* engine_buf = new unsigned char[(size_t)len];
+    memcpy(engine_buf, buf.data(), (size_t)len);
+    if (!engine->load(engine_buf, (size_t)len, options.input_path.c_str())) {
         std::cerr << "Failed to load module: " << engine->getLastError() << "\n";
         return false;
     }
@@ -450,11 +449,11 @@ void Renderer::apply_fadeout(float* out_l, float* out_r, size_t count) {
 
 bool Renderer::render() {
     size_t buf_size = audio_buf_l.size();
-    float* outBuf[2] = {audio_buf_l.data(), audio_buf_r.data()};
 
     auto start_time = std::chrono::high_resolution_clock::now();
 
     while (engine->isPlaying()) {
+        float* outBuf[2] = {audio_buf_l.data(), audio_buf_r.data()};
         engine->nextBuf(NULL, outBuf, 0, 2, (unsigned int)buf_size);
         apply_fadeout(outBuf[0], outBuf[1], buf_size);
 
@@ -476,26 +475,37 @@ bool Renderer::render() {
         }
 
         vb->push_video_frame(viz->get_canvas_buffer());
+        if (vb->is_failed()) {
+            std::cerr << "Video output failed\n";
+            return false;
+        }
 
-        // Interleave audio for ffmpeg
         std::vector<float> interleaved(buf_size * 2);
         for (size_t i = 0; i < buf_size; ++i) {
             interleaved[i * 2 + 0] = outBuf[0][i];
             interleaved[i * 2 + 1] = outBuf[1][i];
         }
         vb->push_audio_samples(interleaved.data(), interleaved.size());
+        if (vb->is_failed()) {
+            std::cerr << "Audio output failed\n";
+            return false;
+        }
 
-        // Loop detection
-        int row = 0, order = 0;
-        engine->getCurSongPos(row, order);
-        if (last_order > 0 && order == 0 && row == 0) {
-            loop_count++;
+        int order = 0, row = 0;
+        engine->getPlayPos(order, row);
+        if (last_order >= 0 && (order != last_order || row != last_row)) {
+            uint16_t pos = (uint16_t)((((unsigned int)order & 0xffu) << 8) | ((unsigned int)row & 0xffu));
+            if (walked_positions.find(pos) != walked_positions.end()) {
+                loop_count++;
+                walked_positions.clear();
+            }
+            walked_positions.insert(pos);
         }
         last_order = order;
+        last_row = row;
 
         cur_frame++;
 
-        // Progress
         if (cur_frame % 60 == 0) {
             auto now = std::chrono::high_resolution_clock::now();
             double elapsed = std::chrono::duration<double>(now - start_time).count();

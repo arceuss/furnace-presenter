@@ -12,6 +12,7 @@ It loads a `.fur` module, renders audio with Furnace itself, draws per-channel o
 - supports GUI preview + CLI rendering
 - supports `--hide-unused`
 - supports custom output resolution with `--width` and `--height`
+- supports `--fadeout-ms` for time-based fadeouts
 
 ## Requirements
 
@@ -48,4 +49,10 @@ furnace-presenter.exe --input song.fur --output song.mp4 --hide-unused
 
 ```sh
 furnace-presenter.exe --input song.fur --output song.mp4 --width 2560 --height 1440 --hide-unused
+```
+
+Two loops with a 10 second fadeout:
+
+```sh
+furnace-presenter.exe --input song.fur --output song.mp4 --stop loops:2 --fadeout-ms 10000
 ```

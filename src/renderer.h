@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_set>
 
 // Forward declare Furnace engine
 class DivEngine;
@@ -38,9 +39,11 @@ class Renderer {
     uint64_t cur_frame = 0;
     uint64_t loop_count = 0;
     int last_order = -1;
+    int last_row = -1;
     uint64_t fadeout_timer = 0;
     uint64_t fadeout_start_frame = 0;
     bool fading = false;
+    std::unordered_set<uint16_t> walked_positions;
 
     std::vector<float> audio_buf_l;
     std::vector<float> audio_buf_r;
