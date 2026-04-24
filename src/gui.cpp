@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "engine/song.h"
+#include <climits>
 #include "engine/engine.h"
 #include "engine/macroInt.h"
 #include "renderer.h"
