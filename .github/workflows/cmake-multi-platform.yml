@@ -5,6 +5,11 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   build:
@@ -19,27 +24,35 @@ jobs:
           - name: ubuntu-24.04
             os: ubuntu-24.04
             build_type: Release
+            arch: x86_64
           - name: ubuntu-24.04
             os: ubuntu-24.04
             build_type: Debug
+            arch: x86_64
           - name: windows-latest
             os: windows-latest
             build_type: Release
+            arch: x86_64
           - name: windows-latest
             os: windows-latest
             build_type: Debug
+            arch: x86_64
           - name: macos-latest
             os: macos-latest
             build_type: Release
+            arch: arm64
           - name: macos-latest
             os: macos-latest
             build_type: Debug
+            arch: arm64
           - name: macos-15-intel
             os: macos-15-intel
             build_type: Release
+            arch: x86_64
           - name: macos-15-intel
             os: macos-15-intel
             build_type: Debug
+            arch: x86_64
 
     steps:
       - name: Checkout
@@ -50,13 +63,22 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@v5
 
-      - name: Setup MSVC (Windows)
+      - name: Setup MSVC
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Set build output variables
+        id: paths
+        run: |
+          echo "build-dir=${GITHUB_WORKSPACE}/build" >> "$GITHUB_OUTPUT"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "binary=${GITHUB_WORKSPACE}/build/furnace-presenter.exe" >> "$GITHUB_OUTPUT"
+          else
+            echo "binary=${GITHUB_WORKSPACE}/build/furnace-presenter" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
-        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -71,26 +93,54 @@ jobs:
             libx11-dev \
             libgl1-mesa-dev
 
-      - name: Configure
-        shell: bash
+      - name: Build Furnace locale files
+        if: runner.os == 'Linux'
         run: |
-          cmake -S "$GITHUB_WORKSPACE" -B "$GITHUB_WORKSPACE/build" \
+          cd "$GITHUB_WORKSPACE/external/furnace"
+          ./scripts/build-po.sh
+
+      - name: Configure
+        run: |
+          CMAKE_EXTRA_ARGS=()
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            if [ "${{ matrix.arch }}" = "arm64" ]; then
+              CMAKE_EXTRA_ARGS+=(
+                '-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0'
+                '-DCMAKE_OSX_ARCHITECTURES=arm64'
+              )
+            else
+              CMAKE_EXTRA_ARGS+=(
+                '-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13'
+                '-DCMAKE_OSX_ARCHITECTURES=x86_64'
+                '-DCMAKE_C_FLAGS=-march=core2'
+                '-DCMAKE_CXX_FLAGS=-march=core2'
+              )
+            fi
+          fi
+
+          cmake \
+            -S "$GITHUB_WORKSPACE" \
+            -B "${{ steps.paths.outputs.build-dir }}" \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-            -DCMAKE_VERBOSE_MAKEFILE=ON
+            -DCMAKE_VERBOSE_MAKEFILE=ON \
+            "${CMAKE_EXTRA_ARGS[@]}"
 
       - name: Build
-        shell: bash
         run: |
-          cmake --build "$GITHUB_WORKSPACE/build" --target furnace-presenter --parallel --verbose
+          cmake --build "${{ steps.paths.outputs.build-dir }}" --target furnace-presenter --parallel 2 --verbose
+
+      - name: Verify output files
+        run: |
+          test -f "${{ steps.paths.outputs.binary }}"
+          test -d "${{ steps.paths.outputs.build-dir }}/assets"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: furnace-presenter-${{ matrix.os }}-${{ matrix.build_type }}
+          name: furnace-presenter-${{ runner.os }}-${{ matrix.arch }}-${{ matrix.build_type }}
           path: |
-            build/furnace-presenter
-            build/furnace-presenter.exe
-            build/assets/**
+            ${{ steps.paths.outputs.binary }}
+            ${{ steps.paths.outputs.build-dir }}/assets/**
           if-no-files-found: error
           retention-days: 30
