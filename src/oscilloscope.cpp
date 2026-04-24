@@ -21,16 +21,21 @@ void Visualizer::draw_oscilloscopes(int x, int y, int w, int h, size_t max_chann
     }
 
     size_t row_start = 0;
+    size_t row_index = 0;
     while (row_start < visible.size()) {
         size_t row_end = std::min(row_start + max_channels_per_row, visible.size());
         size_t row_count = row_end - row_start;
+        size_t row_total = (visible.size() + max_channels_per_row - 1) / max_channels_per_row;
         int cell_w = w / (int)row_count;
+        int cell_h = h / (int)row_total;
+        int cy = y + (int)row_index * cell_h;
 
         for (size_t i = row_start; i < row_end; ++i) {
             int cx = x + (int)(i - row_start) * cell_w;
-            draw_oscilloscope_view(visible[i], cx, y, cell_w, h);
+            draw_oscilloscope_view(visible[i], cx, cy, cell_w, cell_h);
         }
         row_start = row_end;
+        ++row_index;
     }
 }
 
@@ -97,13 +102,16 @@ void Visualizer::draw_oscilloscope_view(size_t channel, int x, int y, int w, int
     // Text labels
     if (config.draw_text_labels && font.valid()) {
         int pad = font.height() / 2;
+        int chip_x = x + pad;
+        int chip_y = y + pad;
+        std::string label = settings->chip;
+        if (!settings->name.empty()) {
+            label += " ";
+            label += settings->name;
+        }
         font.draw_text(canvas, (int)width, (int)height,
-                       settings->chip, x + pad, y + pad,
-                       col.r, col.g, col.b, 0.2f);
-        int name_w = (int)settings->name.size() * font.width();
-        font.draw_text(canvas, (int)width, (int)height,
-                       settings->name, x + w - name_w - pad, y + h - pad * 3,
-                       col.r, col.g, col.b, 0.2f);
+                       label, chip_x, chip_y,
+                       col.r, col.g, col.b, 1.0f);
     }
 }
 
