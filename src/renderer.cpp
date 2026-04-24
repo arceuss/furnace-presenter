@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include <climits>
 #include "engine/engine.h"
 #include "engine/macroInt.h"
 #include <algorithm>

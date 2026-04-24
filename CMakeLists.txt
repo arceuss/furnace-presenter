@@ -46,7 +46,7 @@ set(SOURCES
 add_executable(furnace-presenter ${SOURCES} ${IMGUISRC})
 
 target_include_directories(furnace-presenter PRIVATE ${FURNACE_PRESENTER_DEPS})
-target_compile_definitions(furnace-presenter PRIVATE HAVE_GUI=1)
+target_compile_definitions(furnace-presenter PRIVATE HAVE_GUI=1 HAVE_SNDFILE=1)
 target_link_libraries(furnace-presenter PRIVATE furnace-engine)
 
 if(WIN32)
