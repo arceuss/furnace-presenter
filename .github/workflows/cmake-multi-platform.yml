@@ -1,0 +1,96 @@
+name: CMake multi-platform
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    name: ${{ matrix.name }} (${{ matrix.build_type }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ubuntu-24.04
+            os: ubuntu-24.04
+            build_type: Release
+          - name: ubuntu-24.04
+            os: ubuntu-24.04
+            build_type: Debug
+          - name: windows-latest
+            os: windows-latest
+            build_type: Release
+          - name: windows-latest
+            os: windows-latest
+            build_type: Debug
+          - name: macos-latest
+            os: macos-latest
+            build_type: Release
+          - name: macos-latest
+            os: macos-latest
+            build_type: Debug
+          - name: macos-15-intel
+            os: macos-15-intel
+            build_type: Release
+          - name: macos-15-intel
+            os: macos-15-intel
+            build_type: Debug
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            pkg-config \
+            gettext \
+            libasound2-dev \
+            libpulse-dev \
+            libjack-jackd2-dev \
+            libx11-dev \
+            libgl1-mesa-dev
+
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -S "$GITHUB_WORKSPACE" -B "$GITHUB_WORKSPACE/build" \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+            -DCMAKE_VERBOSE_MAKEFILE=ON
+
+      - name: Build
+        shell: bash
+        run: |
+          cmake --build "$GITHUB_WORKSPACE/build" --target furnace-presenter --parallel --verbose
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: furnace-presenter-${{ matrix.os }}-${{ matrix.build_type }}
+          path: |
+            build/furnace-presenter
+            build/furnace-presenter.exe
+            build/assets/**
+          if-no-files-found: error
+          retention-days: 30
