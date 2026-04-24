@@ -50,6 +50,11 @@ if(NOT TARGET furnace-engine)
     ${FURNACE_AUDIO_SOURCES_ABS}
     ${FURNACE_CLI_SOURCES_ABS}
   )
+  set_target_properties(furnace-engine PROPERTIES
+    CXX_STANDARD 14
+    CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF
+  )
   target_include_directories(furnace-engine SYSTEM PUBLIC ${FURNACE_DEPENDENCY_INCLUDES_ABS})
   target_compile_options(furnace-engine PUBLIC ${FURNACE_DEPENDENCY_COMPILE_OPTIONS})
   target_compile_definitions(furnace-engine PUBLIC ${FURNACE_DEPENDENCY_DEFINES})
