@@ -26,6 +26,7 @@ set(FURNACE_PRESENTER_DEPS
   ${FURNACE_ROOT}/extern
   ${FURNACE_ROOT}/extern/blip_buf
   ${FURNACE_ROOT}/extern/fmt/include
+  ${FURNACE_ROOT}/extern/libsndfile-modified/include
   ${IMGUIPATH}
 )
 
