@@ -23,6 +23,7 @@ static Color furnace_channel_color(int type) {
     }
 }
 
+
 static bool furnace_system_color(DivSystem sys, Color& color) {
     switch (sys) {
         case DIV_SYSTEM_VBOY:
@@ -30,6 +31,22 @@ static bool furnace_system_color(DivSystem sys, Color& color) {
             return true;
         default:
             return false;
+    }
+}
+
+static const char* furnace_channel_system_label(DivEngine* engine, int channel) {
+    if (!engine || channel < 0 || channel >= engine->song.chans) return "Unknown";
+    DivSystem sys = engine->song.sysOfChan[channel];
+    switch (sys) {
+        case DIV_SYSTEM_YM2612:
+        case DIV_SYSTEM_YM2612_DUALPCM:
+        case DIV_SYSTEM_YM2612_EXT:
+        case DIV_SYSTEM_YM2612_DUALPCM_EXT:
+            return "YM2612";
+        case DIV_SYSTEM_SMS:
+            return "SN76489";
+        default:
+            return engine->getSystemName(sys);
     }
 }
 
@@ -210,8 +227,8 @@ bool Renderer::init() {
             base_color = furnace_channel_color(chType);
         }
         cs.colors = furnace_color_variants(base_color);
-        cs.chip = furnace_channel_type_name(chType);
-        cs.name = cs.chip + " " + std::to_string(i + 1);
+        cs.chip = furnace_channel_system_label(engine.get(), i);
+        cs.name = engine->getChannelName(i);
         if (options.hide_unused && !channel_has_ordered_note(engine.get(), i)) {
             cs.hidden = true;
         }
