@@ -18,7 +18,11 @@ VideoBuilder::VideoBuilder(const VideoOptions& opts) : options(opts) {}
 
 VideoBuilder::~VideoBuilder() {
     if (video_pipe) {
+#ifdef _WIN32
+        _pclose(video_pipe);
+#else
         pclose(video_pipe);
+#endif
         video_pipe = nullptr;
     }
     if (audio_file) {
@@ -94,7 +98,11 @@ void VideoBuilder::push_audio_samples(const float* samples, size_t count) {
 
 bool VideoBuilder::finish() {
     if (video_pipe) {
+#ifdef _WIN32
+        _pclose(video_pipe);
+#else
         pclose(video_pipe);
+#endif
         video_pipe = nullptr;
     }
     if (audio_file) {
