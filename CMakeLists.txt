@@ -19,17 +19,6 @@ set(IMGUISRC
     ${IMGUIPATH}/backends/imgui_impl_opengl2.cpp
 )
 
-# Header-only dependencies
-set(FURNACE_PRESENTER_DEPS
-  ${CMAKE_CURRENT_SOURCE_DIR}/deps
-  ${FURNACE_ROOT}/src
-  ${FURNACE_ROOT}/extern
-  ${FURNACE_ROOT}/extern/blip_buf
-  ${FURNACE_ROOT}/extern/fmt/include
-  ${FURNACE_ROOT}/extern/libsndfile-modified/include
-  ${IMGUIPATH}
-)
-
 set(SOURCES
     src/main.cpp
     src/cli.cpp
@@ -46,7 +35,10 @@ set(SOURCES
 
 add_executable(furnace-presenter ${SOURCES} ${IMGUISRC})
 
-target_include_directories(furnace-presenter PRIVATE ${FURNACE_PRESENTER_DEPS})
+target_include_directories(furnace-presenter PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/deps
+  ${IMGUIPATH}
+)
 target_compile_definitions(furnace-presenter PRIVATE HAVE_GUI=1 HAVE_SNDFILE=1)
 target_link_libraries(furnace-presenter PRIVATE furnace-engine)
 
