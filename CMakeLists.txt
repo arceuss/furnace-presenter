@@ -24,6 +24,7 @@ set(FURNACE_PRESENTER_DEPS
   ${CMAKE_CURRENT_SOURCE_DIR}/deps
   ${FURNACE_ROOT}/src
   ${FURNACE_ROOT}/extern
+  ${FURNACE_ROOT}/extern/blip_buf
   ${FURNACE_ROOT}/extern/fmt/include
   ${IMGUIPATH}
 )
