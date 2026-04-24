@@ -1,0 +1,3 @@
+[submodule "external/furnace"]
+	path = external/furnace
+	url = https://github.com/tildearrow/furnace.git
