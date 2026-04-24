@@ -91,6 +91,7 @@ jobs:
             libpulse-dev \
             libjack-jackd2-dev \
             libx11-dev \
+            libxext-dev \
             libgl1-mesa-dev
 
       - name: Build Furnace locale files
