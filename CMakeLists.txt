@@ -39,6 +39,7 @@ if(NOT TARGET furnace-engine)
   furnace_presenter_get_dir_var(FURNACE_DEPENDENCY_LIBRARY_DIRS DEPENDENCIES_LIBRARY_DIRS)
   furnace_presenter_get_dir_var(FURNACE_DEPENDENCY_LINK_OPTIONS DEPENDENCIES_LINK_OPTIONS)
   furnace_presenter_get_dir_var(FURNACE_DEPENDENCY_LEGACY_LDFLAGS DEPENDENCIES_LEGACY_LDFLAGS)
+  furnace_presenter_get_dir_var(FURNACE_WARNING_FLAGS WARNING_FLAGS)
 
   furnace_presenter_prefix_relative_paths(FURNACE_ENGINE_SOURCES_ABS ${FURNACE_ROOT} ${FURNACE_ENGINE_SOURCES})
   furnace_presenter_prefix_relative_paths(FURNACE_AUDIO_SOURCES_ABS ${FURNACE_ROOT} ${FURNACE_AUDIO_SOURCES})
@@ -55,8 +56,17 @@ if(NOT TARGET furnace-engine)
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
   )
+  target_precompile_headers(furnace-engine PUBLIC
+    $<$<COMPILE_LANGUAGE:CXX>:${FURNACE_ROOT}/src/pch.h>
+    $<$<COMPILE_LANGUAGE:CXX>:${FURNACE_ROOT}/extern/imgui_patched/imgui.h>
+    $<$<COMPILE_LANGUAGE:CXX>:${FURNACE_ROOT}/extern/imgui_patched/imgui_internal.h>
+  )
   target_include_directories(furnace-engine SYSTEM PUBLIC ${FURNACE_DEPENDENCY_INCLUDES_ABS})
   target_compile_options(furnace-engine PUBLIC ${FURNACE_DEPENDENCY_COMPILE_OPTIONS})
+  if(MSVC)
+    target_compile_options(furnace-engine PRIVATE /utf-8)
+  endif()
+  target_compile_options(furnace-engine PRIVATE ${FURNACE_WARNING_FLAGS})
   target_compile_definitions(furnace-engine PUBLIC ${FURNACE_DEPENDENCY_DEFINES})
   target_link_libraries(furnace-engine PUBLIC ${FURNACE_DEPENDENCY_LIBRARIES})
   if(WIN32)
